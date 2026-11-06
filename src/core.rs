@@ -104,12 +104,26 @@ pub struct Options {
 /// Progress notification emitted by [`run`]. `Display` gives the CLI/GUI log line.
 #[derive(Debug, Clone)]
 pub enum Event {
-    Started { input: PathBuf, output: PathBuf, password_len: usize },
+    Started {
+        input: PathBuf,
+        output: PathBuf,
+        password_len: usize,
+    },
     Found(usize),
-    Extracted { zip: PathBuf, files: usize, removed: bool },
+    Extracted {
+        zip: PathBuf,
+        files: usize,
+        removed: bool,
+    },
     /// Extracted fine, but the zip could not be deleted.
-    RemoveFailed { zip: PathBuf, error: String },
-    Failed { zip: PathBuf, error: String },
+    RemoveFailed {
+        zip: PathBuf,
+        error: String,
+    },
+    Failed {
+        zip: PathBuf,
+        error: String,
+    },
     Cancelled,
 }
 
@@ -122,17 +136,29 @@ impl Event {
 impl fmt::Display for Event {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Event::Started { input, output, password_len } => write!(
+            Event::Started {
+                input,
+                output,
+                password_len,
+            } => write!(
                 f,
                 "input:  {}\noutput: {}\npassword length: {password_len} chars",
                 input.display(),
                 output.display()
             ),
             Event::Found(n) => write!(f, "found {n} zip file(s)"),
-            Event::Extracted { zip, files, removed: false } => {
+            Event::Extracted {
+                zip,
+                files,
+                removed: false,
+            } => {
                 write!(f, "ok: {} ({files} file(s))", zip.display())
             }
-            Event::Extracted { zip, files, removed: true } => {
+            Event::Extracted {
+                zip,
+                files,
+                removed: true,
+            } => {
                 write!(f, "ok: {} ({files} file(s)), zip removed", zip.display())
             }
             Event::RemoveFailed { zip, error } => write!(
@@ -177,10 +203,21 @@ pub fn run(
             break;
         }
         match extract_zip(&zip, &opts.password, &opts.output) {
-            Ok(files) if !opts.remove_zip => report(Event::Extracted { zip, files, removed: false }),
+            Ok(files) if !opts.remove_zip => report(Event::Extracted {
+                zip,
+                files,
+                removed: false,
+            }),
             Ok(files) => match std::fs::remove_file(&zip) {
-                Ok(()) => report(Event::Extracted { zip, files, removed: true }),
-                Err(e) => report(Event::RemoveFailed { zip, error: e.to_string() }),
+                Ok(()) => report(Event::Extracted {
+                    zip,
+                    files,
+                    removed: true,
+                }),
+                Err(e) => report(Event::RemoveFailed {
+                    zip,
+                    error: e.to_string(),
+                }),
             },
             Err(error) => report(Event::Failed { zip, error }),
         }

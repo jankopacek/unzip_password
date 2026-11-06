@@ -36,7 +36,10 @@ const KEY_OUTPUT: &str = "output_dir";
 impl App {
     /// Restores the last used folders (if they still exist), else the current directory.
     fn new(storage: Option<&dyn eframe::Storage>) -> Self {
-        let cwd = std::env::current_dir().unwrap_or_default().display().to_string();
+        let cwd = std::env::current_dir()
+            .unwrap_or_default()
+            .display()
+            .to_string();
         let saved = |key: &str| {
             storage
                 .and_then(|s| s.get_string(key))
@@ -79,7 +82,10 @@ impl App {
         let (ctx, flag) = (ctx.clone(), cancel.clone());
         std::thread::spawn(move || {
             let result = core::run(&opts, &flag, &mut |event| {
-                let _ = tx.send(Msg::Line { text: event.to_string(), error: event.is_error() });
+                let _ = tx.send(Msg::Line {
+                    text: event.to_string(),
+                    error: event.is_error(),
+                });
                 ctx.request_repaint();
             });
             let _ = tx.send(Msg::Done(result));
@@ -124,7 +130,8 @@ fn form_row(
 ) {
     ui.horizontal(|ui| {
         ui.add_sized([LABEL_WIDTH, ROW_HEIGHT], egui::Label::new(label));
-        let width = (ui.available_width() - TRAILING_WIDTH - ui.spacing().item_spacing.x).max(100.0);
+        let width =
+            (ui.available_width() - TRAILING_WIDTH - ui.spacing().item_spacing.x).max(100.0);
         field(ui, width);
         ui.allocate_ui_with_layout(
             egui::vec2(TRAILING_WIDTH, ROW_HEIGHT),
@@ -150,7 +157,11 @@ fn folder_row(ui: &mut egui::Ui, label: &str, value: &mut String, enabled: bool)
                     .desired_width(width),
             );
         },
-        |ui| picked = ui.add_enabled(enabled, egui::Button::new("Browse…")).clicked(),
+        |ui| {
+            picked = ui
+                .add_enabled(enabled, egui::Button::new("Browse…"))
+                .clicked()
+        },
     );
     if picked {
         let mut dialog = rfd::FileDialog::new();
@@ -200,17 +211,20 @@ impl eframe::App for App {
 
             ui.add_enabled(
                 !running,
-                egui::Checkbox::new(&mut self.remove_zip, "Delete each zip after successful extraction"),
+                egui::Checkbox::new(
+                    &mut self.remove_zip,
+                    "Delete each zip after successful extraction",
+                ),
             );
 
             ui.add_space(8.0);
             ui.horizontal(|ui| {
                 ui.spacing_mut().button_padding = egui::vec2(18.0, 8.0);
                 if running {
-                    if ui.button("Cancel").clicked() {
-                        if let Some(w) = &self.worker {
-                            w.cancel.store(true, Ordering::Relaxed);
-                        }
+                    if ui.button("Cancel").clicked()
+                        && let Some(w) = &self.worker
+                    {
+                        w.cancel.store(true, Ordering::Relaxed);
                     }
                     ui.spinner();
                 } else if ui
@@ -228,7 +242,11 @@ impl eframe::App for App {
                 .show(ui, |ui| {
                     for (line, error) in &self.log {
                         let text = egui::RichText::new(line).monospace();
-                        ui.label(if *error { text.color(ui.visuals().error_fg_color) } else { text });
+                        ui.label(if *error {
+                            text.color(ui.visuals().error_fg_color)
+                        } else {
+                            text
+                        });
                     }
                 });
         });
