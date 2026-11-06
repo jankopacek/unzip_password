@@ -30,14 +30,34 @@ struct Worker {
     cancel: Arc<AtomicBool>,
 }
 
+const KEY_INPUT: &str = "input_dir";
+const KEY_OUTPUT: &str = "output_dir";
+
+impl App {
+    /// Restores the last used folders (if they still exist), else the current directory.
+    fn new(storage: Option<&dyn eframe::Storage>) -> Self {
+        let cwd = std::env::current_dir().unwrap_or_default().display().to_string();
+        let saved = |key: &str| {
+            storage
+                .and_then(|s| s.get_string(key))
+                .filter(|dir| std::path::Path::new(dir).is_dir())
+                .unwrap_or_else(|| cwd.clone())
+        };
+        Self {
+            input: saved(KEY_INPUT),
+            output: saved(KEY_OUTPUT),
+            ..Self::default()
+        }
+    }
+}
+
 impl Default for App {
     fn default() -> Self {
-        let cwd = std::env::current_dir().unwrap_or_default().display().to_string();
         Self {
             password: std::env::var("RENTGENY_PASSWORD").unwrap_or_default(),
             show_password: false,
-            input: cwd.clone(),
-            output: cwd,
+            input: String::new(),
+            output: String::new(),
             remove_zip: false,
             log: Vec::new(),
             worker: None,
@@ -144,6 +164,11 @@ fn folder_row(ui: &mut egui::Ui, label: &str, value: &mut String, enabled: bool)
 }
 
 impl eframe::App for App {
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        storage.set_string(KEY_INPUT, self.input.clone());
+        storage.set_string(KEY_OUTPUT, self.output.clone());
+    }
+
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         self.poll();
         let ctx = ui.ctx().clone();
@@ -213,6 +238,7 @@ impl eframe::App for App {
 pub fn run() -> ExitCode {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
+            .with_app_id("rentgeny")
             .with_inner_size([820.0, 600.0])
             .with_min_inner_size([480.0, 360.0]),
         ..Default::default()
@@ -229,7 +255,7 @@ pub fn run() -> ExitCode {
                 style.spacing.button_padding = egui::vec2(12.0, 6.0);
                 style.spacing.interact_size.y = 30.0;
             });
-            Ok(Box::new(App::default()))
+            Ok(Box::new(App::new(cc.storage)))
         }),
     ) {
         Ok(()) => ExitCode::SUCCESS,
