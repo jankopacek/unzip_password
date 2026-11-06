@@ -1,0 +1,12 @@
+#!/bin/sh
+# Pre-commit: formatting and lint checks. Enable with: git config core.hooksPath .githooks
+set -e
+
+echo "pre-commit: cargo fmt --check"
+cargo fmt --all -- --check || { echo "Run 'cargo fmt' and re-stage."; exit 1; }
+
+echo "pre-commit: cargo clippy (all features)"
+cargo clippy --all-features -- -D warnings
+
+echo "pre-commit: cargo clippy (no default features)"
+cargo clippy --no-default-features -- -D warnings

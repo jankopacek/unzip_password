@@ -7,6 +7,7 @@ Rust (edition 2024) tool that extracts password-protected zips, with a CLI and a
 - `cargo build` / `cargo build --no-default-features` (CLI only, no eframe/rfd)
 - `cargo test` (unit tests live in `src/core.rs`)
 - `cargo clippy --all-features` and `cargo clippy --no-default-features`: check both feature configurations
+- Pre-commit hook in `.githooks/` runs `cargo fmt --check` and clippy (both feature sets, `-D warnings`). Enable once per clone: `git config core.hooksPath .githooks`
 
 ## Layout
 
