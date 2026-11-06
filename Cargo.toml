@@ -16,3 +16,10 @@ zip = "9.4.1"
 
 [dev-dependencies]
 tempfile = "3.27.0"
+
+# Keep dev builds small: line tables only for this crate, no debuginfo for dependencies.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
