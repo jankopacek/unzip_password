@@ -70,7 +70,8 @@ pub fn extract_zip(zip_path: &Path, password: &str, out_dir: &Path) -> Result<us
         std::io::copy(&mut entry, &mut std::io::sink()).map_err(|e| format!("entry #{i}: {e}"))?;
     }
 
-    // Pass 2: write
+    // Pass 2: write (only now is `out_dir` created, so failures leave nothing behind)
+    std::fs::create_dir_all(out_dir).map_err(|e| format!("{}: {e}", out_dir.display()))?;
     let mut count = 0;
     for i in 0..archive.len() {
         let mut entry = archive
@@ -99,6 +100,8 @@ pub struct Options {
     pub input: PathBuf,
     pub output: PathBuf,
     pub remove_zip: bool,
+    /// Extract each zip into a new folder named after the zip (without extension).
+    pub folder_per_zip: bool,
 }
 
 /// Progress notification emitted by [`run`]. `Display` gives the CLI/GUI log line.
@@ -202,7 +205,11 @@ pub fn run(
             report(Event::Cancelled);
             break;
         }
-        match extract_zip(&zip, &opts.password, &opts.output) {
+        let target = match (opts.folder_per_zip, zip.file_stem()) {
+            (true, Some(stem)) => opts.output.join(stem),
+            _ => opts.output.clone(),
+        };
+        match extract_zip(&zip, &opts.password, &target) {
             Ok(files) if !opts.remove_zip => report(Event::Extracted {
                 zip,
                 files,
@@ -333,6 +340,26 @@ mod tests {
 
         assert_eq!(extract_zip(&z, "1234", &out), Ok(1));
         assert_eq!(fs::read(out.join("dir/hello.txt")).unwrap(), b"hello");
+    }
+
+    #[test]
+    fn extract_creates_missing_out_dir() {
+        let tmp = tempfile::tempdir().unwrap();
+        let (z, out) = (tmp.path().join("a.zip"), tmp.path().join("new"));
+        make_zip(&z, "1234");
+
+        assert_eq!(extract_zip(&z, "1234", &out), Ok(1));
+        assert!(out.join("dir/hello.txt").exists());
+    }
+
+    #[test]
+    fn wrong_password_does_not_create_out_dir() {
+        let tmp = tempfile::tempdir().unwrap();
+        let (z, out) = (tmp.path().join("a.zip"), tmp.path().join("new"));
+        make_zip(&z, "1234");
+
+        assert!(extract_zip(&z, "nope", &out).is_err());
+        assert!(!out.exists());
     }
 
     #[test]

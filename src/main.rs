@@ -35,6 +35,10 @@ struct Args {
     /// Delete each zip after it was extracted successfully (zips are kept by default).
     #[arg(short, long)]
     remove_zip: bool,
+
+    /// Extract each zip into a new folder named after the zip file.
+    #[arg(short = 'f', long)]
+    folder_per_zip: bool,
 }
 
 fn run_cli(args: Args) -> Result<(), String> {
@@ -43,6 +47,7 @@ fn run_cli(args: Args) -> Result<(), String> {
         input: args.input,
         output: args.output,
         remove_zip: args.remove_zip,
+        folder_per_zip: args.folder_per_zip,
     };
     core::run(&opts, &AtomicBool::new(false), &mut |event| {
         if event.is_error() {

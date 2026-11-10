@@ -21,6 +21,7 @@ struct App {
     input: String,
     output: String,
     remove_zip: bool,
+    folder_per_zip: bool,
     log: Vec<(String, bool)>,
     worker: Option<Worker>,
 }
@@ -32,6 +33,7 @@ struct Worker {
 
 const KEY_INPUT: &str = "input_dir";
 const KEY_OUTPUT: &str = "output_dir";
+const KEY_FOLDER_PER_ZIP: &str = "folder_per_zip";
 
 impl App {
     /// Restores the last used folders (if they still exist), else the current directory.
@@ -49,6 +51,9 @@ impl App {
         Self {
             input: saved(KEY_INPUT),
             output: saved(KEY_OUTPUT),
+            folder_per_zip: storage
+                .and_then(|s| s.get_string(KEY_FOLDER_PER_ZIP))
+                .is_some_and(|v| v == "true"),
             ..Self::default()
         }
     }
@@ -62,6 +67,7 @@ impl Default for App {
             input: String::new(),
             output: String::new(),
             remove_zip: false,
+            folder_per_zip: false,
             log: Vec::new(),
             worker: None,
         }
@@ -75,6 +81,7 @@ impl App {
             input: PathBuf::from(&self.input),
             output: PathBuf::from(&self.output),
             remove_zip: self.remove_zip,
+            folder_per_zip: self.folder_per_zip,
         };
         self.log.clear();
         let (tx, rx) = mpsc::channel();
@@ -178,6 +185,7 @@ impl eframe::App for App {
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
         storage.set_string(KEY_INPUT, self.input.clone());
         storage.set_string(KEY_OUTPUT, self.output.clone());
+        storage.set_string(KEY_FOLDER_PER_ZIP, self.folder_per_zip.to_string());
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
@@ -214,6 +222,13 @@ impl eframe::App for App {
                 egui::Checkbox::new(
                     &mut self.remove_zip,
                     "Delete each zip after successful extraction",
+                ),
+            );
+            ui.add_enabled(
+                !running,
+                egui::Checkbox::new(
+                    &mut self.folder_per_zip,
+                    "Extract each zip into its own folder (named after the zip)",
                 ),
             );
 
